@@ -39,5 +39,7 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- string) {
 
 type Graph map[int]*Node
 
-func (g Graph) AddNode() {}
+func (g Graph) AddNode(label string) {
+	
+}
 func (g Graph) AddEdge() {}

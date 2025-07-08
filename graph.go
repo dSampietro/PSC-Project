@@ -23,22 +23,26 @@ func NewNode(s string) *Node {
 type Message struct {
 	sentence string
 	visited map[*Node]int
+	depth int
 }
 
-
-func NewMessage(s string) Message {
-	return Message {
-		sentence: s,
-		visited: make(map[*Node]int),
-	}
-}
 
 
 //TODO: abort when > N
-func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message) {
+func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
 		for msg := range n.input {
+			if msg.depth >= max_depth {
+				wg.Done()
+                continue
+            }
 
+			if msg.visited[n] + 1 > node_limit {
+				wg.Done()
+				continue
+			}
+
+			newSentence := msg.sentence + " " + n.label
 			//update visited nodes of message
 			newVisited := make(map[*Node]int)
 			for k, v := range msg.visited {
@@ -46,21 +50,31 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message) {
 			}
 			newVisited[n]++
 
-			newMsg := Message{
-				sentence: msg.sentence + " " + n.label,
-				visited: newVisited,
-			}
 			
 			if len(n.successors) == 0 {	//terminal node
-				resultCh <- newMsg
+				resultCh <- Message{
+					sentence: newSentence,
+					visited: newVisited,
+					depth: msg.depth + 1}
 				wg.Done()
-			} else {
-				for _, succ := range n.successors {
-					wg.Add(1)
-					succ.input <- newMsg
+				continue
+			} 
+
+			//forward to successors
+			for _, succ := range n.successors {
+				wg.Add(1)
+
+				visitedCopy := make(map[*Node]int)
+				for k, v := range newVisited {
+					visitedCopy[k] = v
 				}
-				wg.Done()
+
+				succ.input <- Message{
+					sentence: newSentence,
+					visited: visitedCopy,
+					depth: msg.depth + 1}
 			}
+			wg.Done()
 		}
 	}()
 }

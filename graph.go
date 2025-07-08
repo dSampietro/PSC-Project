@@ -56,14 +56,8 @@ func NewGraph() *Graph {
 }
 
 
-func (g *Graph) AddNode(label string) *Node {
-	node := &Node{
-		label:      label,
-		input:      make(chan string),
-		successors: []*Node{},
-	}
-	g.nodes[label] = node
-	return node
+func (g *Graph) AddNode(label string) {
+	g.nodes[label] = NewNode(label)
 }
 
 

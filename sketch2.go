@@ -40,7 +40,6 @@ func TrimPunctuation(s string) string {
 }
 
 
-
 func main() {
 	text := ParseFile("example.txt")
 	fmt.Println(text)
@@ -67,37 +66,6 @@ func main() {
 
 	
 	//GRAPH BUILDING
-	/*
-	nodes := map[string]*Node{}
-	nodes["."] = NewNode(".")
-	
-	//TODO: reverse building: start from last, add prev + edges
-	for _, sent_tokens := range tokens{
-		//add nodes
-		for _, el := range sent_tokens {
-			el = TrimPunctuation(el)
-			if nodes[el] == nil {
-				nodes[el] = NewNode(el)
-				log.Printf("Adding node %s\n", el)
-			}
-		}
-		
-		for i, el := range sent_tokens {
-			el = TrimPunctuation(el)
-			if i < len(sent_tokens) - 1 {
-				next := TrimPunctuation(sent_tokens[i+1])
-				nodes[el].successors = append(nodes[el].successors, nodes[next])	//add bigram as edge
-				log.Printf("Adding edge %s -> %s ", el,sent_tokens[i+1])			
-			} else {
-				nodes[sent_tokens[i]].successors = []*Node{nodes["."]}
-				log.Printf("Adding edge %s -> .\n ", sent_tokens[i])
-
-			}
-		}
-	} 
-
-	PrettyPrint(nodes)*/
-
 	graph := NewGraph()
 	graph.AddNode(".")
 	for _, sent_tokens := range tokens {

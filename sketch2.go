@@ -46,7 +46,7 @@ func TrimPunctuation(s string) string {
 func main() {
 	log.SetOutput(io.Discard)	//enable/disable logging
 	
-	text := ParseFile("example.txt")
+	text := ParseFile("example_cycle.txt")
 	fmt.Println(text)
 
 	sentences := strings.Split(strings.TrimSpace(text), ".")
@@ -102,25 +102,26 @@ func main() {
     
 	//SENTENCE GENERATION
 	var wg sync.WaitGroup
-	resultCh := make(chan Message)
+	resultCh := make(chan Message, 1000)
 
 	start := time.Now()
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
+		if node.label == "." { continue }
 		wg.Add(1)
 		msg := Message {
 			sentence: fmt.Sprintf("[FROM %s]", node.label),
 			visited: map[*Node]int{node: 1},
+			depth: 0,
 		}
 		node.input <- msg // Start traversal with empty message
 	}
 
 
 	for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh)
+		node.GenerateSenetence(&wg, resultCh, 16, 20)
 	}
-
 
 
 	// Wait for all paths to finish

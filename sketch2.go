@@ -102,14 +102,18 @@ func main() {
     
 	//SENTENCE GENERATION
 	var wg sync.WaitGroup
-	resultCh := make(chan string)
+	resultCh := make(chan Message)
 
 	start := time.Now()
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
 		wg.Add(1)
-		node.input <- fmt.Sprintf("[FROM %s]",node.label) // Start traversal with empty message
+		msg := Message {
+			sentence: fmt.Sprintf("[FROM %s]", node.label),
+			visited: map[*Node]int{node: 1},
+		}
+		node.input <- msg // Start traversal with empty message
 	}
 
 
@@ -132,7 +136,7 @@ func main() {
 	// Collect results
 	i := 0
 	for res := range resultCh {
-		fmt.Println(res)
+		fmt.Println(res.sentence)
 		i++
 	}
 }

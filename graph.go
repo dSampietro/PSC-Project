@@ -7,14 +7,14 @@ import (
 
 type Node struct {
 	label 		string
-	input 		chan string
+	input 		chan Message
 	successors 	[]*Node
 }
 
 func NewNode(s string) *Node {
 	return &Node{
 		label: s,
-		input: make(chan string, 100), 	//add buffer to make async
+		input: make(chan Message, 100), 	//add buffer to make async
 		successors: []*Node{},
 	}
 }
@@ -25,10 +25,31 @@ type Message struct {
 	visited map[*Node]int
 }
 
-func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- string) {
+
+func NewMessage(s string) Message {
+	return Message {
+		sentence: s,
+		visited: make(map[*Node]int),
+	}
+}
+
+
+//TODO: abort when > N
+func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message) {
 	go func(){
 		for msg := range n.input {
-			newMsg := msg + " " + n.label
+
+			//update visited nodes of message
+			newVisited := make(map[*Node]int)
+			for k, v := range msg.visited {
+				newVisited[k] = v
+			}
+			newVisited[n]++
+
+			newMsg := Message{
+				sentence: msg.sentence + " " + n.label,
+				visited: newVisited,
+			}
 			
 			if len(n.successors) == 0 {	//terminal node
 				resultCh <- newMsg

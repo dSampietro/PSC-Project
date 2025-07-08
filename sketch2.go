@@ -23,8 +23,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"sync"
-	"time"
 	"unicode"
 )
 
@@ -41,7 +39,7 @@ func TrimPunctuation(s string) string {
 	})
 }
 
-func PrettyPrint(graph map[string]*Node){
+/*func PrettyPrint(graph map[string]*Node){
 
 	fmt.Println("digraph {")
 	for _, node := range graph {
@@ -52,7 +50,7 @@ func PrettyPrint(graph map[string]*Node){
 		}
 	}
 	fmt.Printf("}\n")
-}
+}*/
 
 
 func main() {
@@ -74,11 +72,9 @@ func main() {
 
 	fmt.Println(tokens)
 
-	//all_tokens := slices.Concat(tokens...) 
-	//fmt.Println(all_tokens)
 	
 	//GRAPH BUILDING
-
+	/*
 	nodes := map[string]*Node{}
 	nodes["."] = NewNode(".")
 	
@@ -107,10 +103,38 @@ func main() {
 		}
 	} 
 
-	PrettyPrint(nodes)
+	PrettyPrint(nodes)*/
+
+	graph := NewGraph()
+	graph.AddNode(".")
+	for _, sent_tokens := range tokens {
+		for _, el := range sent_tokens {
+			el = TrimPunctuation(el)
+			if graph.nodes[el] == nil {
+				graph.AddNode(el)
+				log.Printf("Adding node %s\n", el)
+			}
+		}
+
+		for i, el := range sent_tokens {
+			el = TrimPunctuation(el)
+			if i < len(sent_tokens) - 1 {
+				next := TrimPunctuation(sent_tokens[i+1])
+				graph.AddEdge(el, next)	//add bigram as edge
+				log.Printf("Adding edge %s -> %s ", el,sent_tokens[i+1])			
+			} else {
+				graph.AddEdge(sent_tokens[i], ".")
+				log.Printf("Adding edge %s -> .\n ", sent_tokens[i])
+
+			}
+		}
+
+	}
+
+	graph.PrettyPrint()
 
 
-
+    /*
 	//SENTENCE GENERATION
 	var wg sync.WaitGroup
 	resultCh := make(chan string)
@@ -150,5 +174,5 @@ func main() {
 
 	//fmt.Printf("#visits: %d\n#nodes: %d\n", i, len(txt))
 	//Assert(i == len(txt), "#visits")
-	
+	*/
 }

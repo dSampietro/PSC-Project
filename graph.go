@@ -20,6 +20,11 @@ func NewNode(s string) *Node {
 }
 
 
+type Message struct {
+	sentence string
+	visited map[*Node]int
+}
+
 func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- string) {
 	go func(){
 		for msg := range n.input {

@@ -70,7 +70,12 @@ func main() {
 		}
 	}
 
-	fmt.Println(tokens)
+	//compute min value of N
+	max_string_len := 0
+	for _, tok := range tokens {
+		max_string_len = max(max_string_len, len(tok))
+	}
+	fmt.Printf("max_string_len: %d\n", max_string_len)
 
 	
 	//GRAPH BUILDING

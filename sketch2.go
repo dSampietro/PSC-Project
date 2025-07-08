@@ -39,18 +39,6 @@ func TrimPunctuation(s string) string {
 	})
 }
 
-/*func PrettyPrint(graph map[string]*Node){
-
-	fmt.Println("digraph {")
-	for _, node := range graph {
-		if node.successors != nil {
-			for _, succ  := range node.successors {
-				fmt.Printf("\t%s -> %s\n", node.label, succ.label)
-			}
-		}
-	}
-	fmt.Printf("}\n")
-}*/
 
 
 func main() {

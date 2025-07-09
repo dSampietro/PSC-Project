@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	"sync/atomic"
 )
 
 type Node struct {
@@ -11,13 +12,53 @@ type Node struct {
 	successors 	[]*Node
 }
 
-func NewNode(s string) *Node {
+func NewNode(s string, bufferSize int) *Node {
 	return &Node{
 		label: s,
-		input: make(chan Message, 100), 	//add buffer to make async
+		input: make(chan Message, bufferSize), 	//add buffer to make async
 		successors: []*Node{},
 	}
 }
+
+type Graph struct {
+	nodes map[string]*Node
+}
+
+func NewGraph() *Graph {
+	return &Graph{
+		nodes: make(map[string]*Node),
+	}
+}
+
+
+func (g *Graph) AddNode(label string) {
+	BUFFER_SIZE := 1000
+	g.nodes[label] = NewNode(label, BUFFER_SIZE)
+}
+
+
+func (g *Graph) AddEdge(fromLabel, toLabel string) {
+	fromNode := g.nodes[fromLabel]
+	toNode := g.nodes[toLabel]
+	if fromNode != nil && toNode != nil {
+		fromNode.successors = append(fromNode.successors, toNode)
+	}
+}
+
+
+func (g *Graph) PrettyPrint(){
+	fmt.Println("digraph {")
+	for _, node := range g.nodes {
+		if node.successors != nil {
+			for _, succ  := range node.successors {
+				fmt.Printf("\t%s -> %s\n", node.label, succ.label)
+			}
+		}
+	}
+	fmt.Printf("}\n")
+}
+
+
 
 
 type Message struct {
@@ -27,17 +68,35 @@ type Message struct {
 }
 
 
+/*
+maxInFlight is the minimum buffer size you’d need on your busiest channel to avoid ever blocking.
+*/
 
-//TODO: abort when > N
+var (
+	inFlight    int64 // current # of messages sent but not yet fully handled
+	maxInFlight int64 // peak value of inFlight
+)
+
+func recordPeak(n int64) {
+	for {
+		old := atomic.LoadInt64(&maxInFlight)
+		if n <= old || atomic.CompareAndSwapInt64(&maxInFlight, old, n) {
+			break
+		}
+	}
+}
+
 func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
 		for msg := range n.input {
 			if msg.depth >= max_depth {
+				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
                 continue
             }
 
 			if msg.visited[n] + 1 > node_limit {
+				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
 				continue
 			}
@@ -64,10 +123,14 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 			for _, succ := range n.successors {
 				wg.Add(1)
 
+				//clone visited list for each successor, to avoid mutable sharing
 				visitedCopy := make(map[*Node]int)
 				for k, v := range newVisited {
 					visitedCopy[k] = v
 				}
+
+				curr := atomic.AddInt64(&inFlight, 1)
+				recordPeak(curr)
 
 				succ.input <- Message{
 					sentence: newSentence,
@@ -77,42 +140,4 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 			wg.Done()
 		}
 	}()
-}
-
-
-type Graph struct {
-	nodes map[string]*Node
-}
-
-func NewGraph() *Graph {
-	return &Graph{
-		nodes: make(map[string]*Node),
-	}
-}
-
-
-func (g *Graph) AddNode(label string) {
-	g.nodes[label] = NewNode(label)
-}
-
-
-func (g *Graph) AddEdge(fromLabel, toLabel string) {
-	fromNode := g.nodes[fromLabel]
-	toNode := g.nodes[toLabel]
-	if fromNode != nil && toNode != nil {
-		fromNode.successors = append(fromNode.successors, toNode)
-	}
-}
-
-
-func (g *Graph) PrettyPrint(){
-	fmt.Println("digraph {")
-	for _, node := range g.nodes {
-		if node.successors != nil {
-			for _, succ  := range node.successors {
-				fmt.Printf("\t%s -> %s\n", node.label, succ.label)
-			}
-		}
-	}
-	fmt.Printf("}\n")
 }

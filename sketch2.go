@@ -25,6 +25,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode"
 )
@@ -106,21 +107,24 @@ func main() {
 
 	start := time.Now()
 
+	/*for _, node := range graph.nodes {
+		node.GenerateSenetence(&wg, resultCh, 10, 10)
+	}
+	*/
+
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
+		node.GenerateSenetence(&wg, resultCh, 20, 20)
+
 		if node.label == "." { continue }
 		wg.Add(1)
+		
 		msg := Message {
 			sentence: fmt.Sprintf("[FROM %s]", node.label),
 			visited: map[*Node]int{node: 1},
 			depth: 0,
 		}
 		node.input <- msg // Start traversal with empty message
-	}
-
-
-	for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 16, 20)
 	}
 
 
@@ -132,7 +136,6 @@ func main() {
 
 	t := time.Now()
 	elapsed := t.Sub(start)
-	fmt.Println("Sentence generation took:", elapsed)
 
 	// Collect results
 	i := 0
@@ -140,4 +143,9 @@ func main() {
 		fmt.Println(res.sentence)
 		i++
 	}
+	fmt.Println("#sentences:", i)
+
+	fmt.Println("Sentence generation took:", elapsed)
+	fmt.Printf("Peak in‐flight messages: %d\n", atomic.LoadInt64(&maxInFlight))
+
 }

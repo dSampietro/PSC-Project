@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"golang.design/x/chann"
@@ -46,16 +47,21 @@ func (g *Graph) AddEdge(fromLabel, toLabel string) {
 }
 
 
-func (g *Graph) PrettyPrint(){
-	fmt.Println("digraph {")
+func (g *Graph) ToDot() string {
+	var builder strings.Builder
+	
+	builder.WriteString("digraph {\n")
 	for _, node := range g.nodes {
 		if node.successors != nil {
 			for _, succ  := range node.successors {
-				fmt.Printf("\t%s -> %s\n", node.label, succ.label)
+				line := fmt.Sprintf("\t%s -> %s\n", node.label, succ.label)
+				builder.WriteString(line)
 			}
 		}
 	}
-	fmt.Printf("}\n")
+	builder.WriteString("}\n")
+
+	return builder.String()
 }
 
 

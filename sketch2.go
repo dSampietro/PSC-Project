@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -98,7 +99,15 @@ func main() {
 		}
 	}
 
-	graph.PrettyPrint()
+	fmt.Println(graph.ToDot())
+
+	go func() {
+		graph_file := "./graph.dot"
+		err := os.WriteFile(graph_file, []byte(graph.ToDot()), 0644)
+		if err != nil {
+			os.Remove(graph_file)
+		}
+	}()
 
 
     

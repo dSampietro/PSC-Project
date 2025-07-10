@@ -25,9 +25,10 @@ import (
 	"log"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 	"unicode"
+
+	"golang.design/x/chann"
 )
 
 
@@ -103,13 +104,13 @@ func main() {
     
 	//SENTENCE GENERATION
 	var wg sync.WaitGroup
-	resultCh := make(chan Message, 1000)
+	resultCh := chann.New[Message]()//make(chan Message, 1000)
 
 	start := time.Now()
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 20, 40)
+		node.GenerateSenetence(&wg, resultCh.In(), 20, 20)
 
 		if node.label == "." { continue }
 		wg.Add(1)
@@ -126,7 +127,8 @@ func main() {
 	// Wait for all paths to finish
 	go func() {
 		wg.Wait()
-		close(resultCh)
+		//close(resultCh)
+		resultCh.Close()
 	}()
 
 	t := time.Now()
@@ -134,17 +136,17 @@ func main() {
 
 	// Collect results
 	i := 0
-	for res := range resultCh {
+	for res := range resultCh.Out() {
 		fmt.Println(res.sentence)
 		i++
 	}
 	fmt.Println("#sentences:", i)
+	
 
 	fmt.Println("Sentence generation took:", elapsed)
-	fmt.Printf("Peak in‐flight messages: %d\n", atomic.LoadInt64(&maxInFlight))
 
 	//Free graph
-	for _, node := range graph.nodes {
+	/*for _, node := range graph.nodes {
 		node.input.Close()
-	}
+	}*/
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"golang.design/x/chann"
 )
@@ -69,35 +68,15 @@ type Message struct {
 }
 
 
-/*
-maxInFlight is the minimum buffer size you’d need on your busiest channel to avoid ever blocking.
-*/
-
-var (
-	inFlight    int64 // current # of messages sent but not yet fully handled
-	maxInFlight int64 // peak value of inFlight
-)
-
-func recordPeak(n int64) {
-	for {
-		old := atomic.LoadInt64(&maxInFlight)
-		if n <= old || atomic.CompareAndSwapInt64(&maxInFlight, old, n) {
-			break
-		}
-	}
-}
-
 func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
 		for msg := range n.input.Out() {
 			if msg.depth >= max_depth {
-				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
                 continue
             }
 
 			if msg.visited[n] + 1 > node_limit {
-				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
 				continue
 			}
@@ -129,9 +108,6 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 				for k, v := range newVisited {
 					visitedCopy[k] = v
 				}
-
-				curr := atomic.AddInt64(&inFlight, 1)
-				recordPeak(curr)
 
 				succ.input.In() <- Message{
 					sentence: newSentence,

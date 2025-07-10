@@ -107,11 +107,6 @@ func main() {
 
 	start := time.Now()
 
-	//for _, node := range graph.nodes {
-	//	node.GenerateSenetence(&wg, resultCh, 10, 10)
-	//}
-	//
-
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
 		node.GenerateSenetence(&wg, resultCh, 20, 40)

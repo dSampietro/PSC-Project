@@ -2,20 +2,22 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"sync"
-	"sync/atomic"
+
+	"golang.design/x/chann"
 )
 
 type Node struct {
 	label 		string
-	input 		chan Message
+	input 		*chann.Chann[Message]
 	successors 	[]*Node
 }
 
-func NewNode(s string, bufferSize int) *Node {
+func NewNode(s string) *Node {
 	return &Node{
 		label: s,
-		input: make(chan Message, bufferSize), 	//add buffer to make async
+		input: chann.New[Message](), 	//add buffer to make async
 		successors: []*Node{},
 	}
 }
@@ -32,8 +34,7 @@ func NewGraph() *Graph {
 
 
 func (g *Graph) AddNode(label string) {
-	BUFFER_SIZE := 1000
-	g.nodes[label] = NewNode(label, BUFFER_SIZE)
+	g.nodes[label] = NewNode(label)
 }
 
 
@@ -46,16 +47,21 @@ func (g *Graph) AddEdge(fromLabel, toLabel string) {
 }
 
 
-func (g *Graph) PrettyPrint(){
-	fmt.Println("digraph {")
+func (g *Graph) ToDot() string {
+	var builder strings.Builder
+	
+	builder.WriteString("digraph {\n")
 	for _, node := range g.nodes {
 		if node.successors != nil {
 			for _, succ  := range node.successors {
-				fmt.Printf("\t%s -> %s\n", node.label, succ.label)
+				line := fmt.Sprintf("\t%s -> %s\n", node.label, succ.label)
+				builder.WriteString(line)
 			}
 		}
 	}
-	fmt.Printf("}\n")
+	builder.WriteString("}\n")
+
+	return builder.String()
 }
 
 
@@ -68,35 +74,15 @@ type Message struct {
 }
 
 
-/*
-maxInFlight is the minimum buffer size you’d need on your busiest channel to avoid ever blocking.
-*/
-
-var (
-	inFlight    int64 // current # of messages sent but not yet fully handled
-	maxInFlight int64 // peak value of inFlight
-)
-
-func recordPeak(n int64) {
-	for {
-		old := atomic.LoadInt64(&maxInFlight)
-		if n <= old || atomic.CompareAndSwapInt64(&maxInFlight, old, n) {
-			break
-		}
-	}
-}
-
 func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
-		for msg := range n.input {
+		for msg := range n.input.Out() {
 			if msg.depth >= max_depth {
-				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
                 continue
             }
 
 			if msg.visited[n] + 1 > node_limit {
-				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
 				continue
 			}
@@ -129,10 +115,7 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 					visitedCopy[k] = v
 				}
 
-				curr := atomic.AddInt64(&inFlight, 1)
-				recordPeak(curr)
-
-				succ.input <- Message{
+				succ.input.In() <- Message{
 					sentence: newSentence,
 					visited: visitedCopy,
 					depth: msg.depth + 1}

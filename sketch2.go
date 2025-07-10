@@ -23,11 +23,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 	"unicode"
+
+	"golang.design/x/chann"
 )
 
 
@@ -97,24 +99,27 @@ func main() {
 		}
 	}
 
-	graph.PrettyPrint()
+	fmt.Println(graph.ToDot())
+
+	go func() {
+		graph_file := "./graph.dot"
+		err := os.WriteFile(graph_file, []byte(graph.ToDot()), 0644)
+		if err != nil {
+			os.Remove(graph_file)
+		}
+	}()
 
 
     
 	//SENTENCE GENERATION
 	var wg sync.WaitGroup
-	resultCh := make(chan Message, 1000)
+	resultCh := chann.New[Message]()//make(chan Message, 1000)
 
 	start := time.Now()
 
-	/*for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 10, 10)
-	}
-	*/
-
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 20, 20)
+		node.GenerateSenetence(&wg, resultCh.In(), 20, 20)
 
 		if node.label == "." { continue }
 		wg.Add(1)
@@ -124,14 +129,15 @@ func main() {
 			visited: map[*Node]int{node: 1},
 			depth: 0,
 		}
-		node.input <- msg // Start traversal with empty message
+		node.input.In() <- msg // Start traversal with empty message
 	}
 
 
 	// Wait for all paths to finish
 	go func() {
 		wg.Wait()
-		close(resultCh)
+		//close(resultCh)
+		resultCh.Close()
 	}()
 
 	t := time.Now()
@@ -139,13 +145,17 @@ func main() {
 
 	// Collect results
 	i := 0
-	for res := range resultCh {
+	for res := range resultCh.Out() {
 		fmt.Println(res.sentence)
 		i++
 	}
 	fmt.Println("#sentences:", i)
+	
 
 	fmt.Println("Sentence generation took:", elapsed)
-	fmt.Printf("Peak in‐flight messages: %d\n", atomic.LoadInt64(&maxInFlight))
 
+	//Free graph
+	/*for _, node := range graph.nodes {
+		node.input.Close()
+	}*/
 }

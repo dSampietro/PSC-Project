@@ -6,3 +6,11 @@ If the sentences in the text are independent, the generated sentences wil not in
 - graph nodes id is the position of the word in the text; the same word appear multiple times (every node is unique)
 - to handle cycles, in a sentence generation, a node may not appear more than N (parameter) times and the generated sentence must not be longer than $max_depth$ (param); otherwise the generation will be aborted; $N \ge max_i\{|str_i|\}$ 
   doing this, we are not excluding valid long sentences, but we impose an hard limit on (possibly) infinite cycles.
+
+# Scalability
+The first solution had a fixed buffer size; however 
+1) for bigger texts
+2) for varying depth, limit paramters
+this can cause panics or crashes.
+
+My solution was to opt for unbounded channels.

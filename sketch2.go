@@ -107,14 +107,14 @@ func main() {
 
 	start := time.Now()
 
-	/*for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 10, 10)
-	}
-	*/
+	//for _, node := range graph.nodes {
+	//	node.GenerateSenetence(&wg, resultCh, 10, 10)
+	//}
+	//
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
-		node.GenerateSenetence(&wg, resultCh, 20, 20)
+		node.GenerateSenetence(&wg, resultCh, 20, 40)
 
 		if node.label == "." { continue }
 		wg.Add(1)
@@ -124,7 +124,7 @@ func main() {
 			visited: map[*Node]int{node: 1},
 			depth: 0,
 		}
-		node.input <- msg // Start traversal with empty message
+		node.input.In() <- msg // Start traversal with empty message
 	}
 
 
@@ -148,4 +148,8 @@ func main() {
 	fmt.Println("Sentence generation took:", elapsed)
 	fmt.Printf("Peak in‐flight messages: %d\n", atomic.LoadInt64(&maxInFlight))
 
+	//Free graph
+	for _, node := range graph.nodes {
+		node.input.Close()
+	}
 }

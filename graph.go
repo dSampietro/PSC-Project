@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"golang.design/x/chann"
 )
 
 type Node struct {
 	label 		string
-	input 		chan Message
+	input 		*chann.Chann[Message]
 	successors 	[]*Node
 }
 
-func NewNode(s string, bufferSize int) *Node {
+func NewNode(s string) *Node {
 	return &Node{
 		label: s,
-		input: make(chan Message, bufferSize), 	//add buffer to make async
+		input: chann.New[Message](), 	//add buffer to make async
 		successors: []*Node{},
 	}
 }
@@ -32,8 +34,7 @@ func NewGraph() *Graph {
 
 
 func (g *Graph) AddNode(label string) {
-	BUFFER_SIZE := 1000
-	g.nodes[label] = NewNode(label, BUFFER_SIZE)
+	g.nodes[label] = NewNode(label)
 }
 
 
@@ -88,7 +89,7 @@ func recordPeak(n int64) {
 
 func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
-		for msg := range n.input {
+		for msg := range n.input.Out() {
 			if msg.depth >= max_depth {
 				atomic.AddInt64(&inFlight, -1)
 				wg.Done()
@@ -132,7 +133,7 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 				curr := atomic.AddInt64(&inFlight, 1)
 				recordPeak(curr)
 
-				succ.input <- Message{
+				succ.input.In() <- Message{
 					sentence: newSentence,
 					visited: visitedCopy,
 					depth: msg.depth + 1}

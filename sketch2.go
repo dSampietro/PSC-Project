@@ -122,7 +122,7 @@ func main() {
 		}
 	}
 
-	fmt.Println(graph.ToDot())
+	//fmt.Println(graph.ToDot())
 
 	if *export_graph {
 		go func() {
@@ -144,6 +144,7 @@ func main() {
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
+		// we guarantee one goroutine/node => no unbounded goroutines
 		node.GenerateSenetence(&wg, resultCh.In(), *node_limit, *max_depth)
 
 		if node.label == "." { continue }
@@ -151,7 +152,7 @@ func main() {
 		
 		msg := Message {
 			sentence: fmt.Sprintf("[FROM %s]", node.label),
-			visited: map[*Node]int{node: 1},
+			visited: map[string]int{node.label: 1},
 			depth: 0,
 		}
 		node.input.In() <- msg // Start traversal with empty message
@@ -184,5 +185,6 @@ func main() {
 		node.input.Close()
 	}
 
+	//TODO: write senteces to output file
 	if *export_sentences {}
 }

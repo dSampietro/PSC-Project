@@ -54,7 +54,7 @@ func (g *Graph) ToDot() string {
 	for _, node := range g.nodes {
 		if node.successors != nil {
 			for _, succ  := range node.successors {
-				line := fmt.Sprintf("\t%s -> %s\n", node.label, succ.label)
+				line := fmt.Sprintf("\t\"%s\" -> \"%s\"\n", node.label, succ.label)
 				builder.WriteString(line)
 			}
 		}

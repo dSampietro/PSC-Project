@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
@@ -28,7 +29,7 @@ type Graph struct {
 
 func NewGraph() *Graph {
 	return &Graph{
-		nodes: make(map[string]*Node),
+		nodes: make(map[string]*Node, 100),
 	}
 }
 
@@ -41,8 +42,10 @@ func (g *Graph) AddNode(label string) {
 func (g *Graph) AddEdge(fromLabel, toLabel string) {
 	fromNode := g.nodes[fromLabel]
 	toNode := g.nodes[toLabel]
-	if fromNode != nil && toNode != nil {
-		fromNode.successors = append(fromNode.successors, toNode)
+	if fromNode != nil && toNode != nil {	//prevent from adding same edge multiple times
+		if !slices.Contains(fromNode.successors, toNode){
+			fromNode.successors = append(fromNode.successors, toNode)
+		}
 	}
 }
 
@@ -69,7 +72,7 @@ func (g *Graph) ToDot() string {
 
 type Message struct {
 	sentence string
-	visited map[*Node]int
+	visited map[string]int
 	depth int
 }
 
@@ -82,18 +85,18 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
                 continue
             }
 
-			if msg.visited[n] + 1 > node_limit {
+			if msg.visited[n.label] + 1 > node_limit {
 				wg.Done()
 				continue
 			}
 
 			newSentence := msg.sentence + " " + n.label
 			//update visited nodes of message
-			newVisited := make(map[*Node]int)
+			newVisited := make(map[string]int, len(msg.visited))
 			for k, v := range msg.visited {
 				newVisited[k] = v
 			}
-			newVisited[n]++
+			newVisited[n.label]++
 
 			
 			if len(n.successors) == 0 {	//terminal node
@@ -110,7 +113,7 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 				wg.Add(1)
 
 				//clone visited list for each successor, to avoid mutable sharing
-				visitedCopy := make(map[*Node]int)
+				visitedCopy := make(map[string]int, len(msg.visited))
 				for k, v := range newVisited {
 					visitedCopy[k] = v
 				}

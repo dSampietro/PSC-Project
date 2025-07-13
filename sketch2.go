@@ -57,8 +57,10 @@ func main() {
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
 	export_sentences := flag.Bool("export_sentences", false, "enable to export the generated sentences")
-	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
 
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+	memprofile := flag.String("memprofile", "", "write memory profile to this file")
+	
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -88,13 +90,14 @@ func main() {
 		}
 	}
 
+	/*
 	//compute min value of N
 	max_string_len := 0
 	for _, tok := range tokens {
 		max_string_len = max(max_string_len, len(tok))
 	}
 	fmt.Printf("max_string_len: %d\n", max_string_len)
-
+	*/
 	
 	//GRAPH BUILDING
 	graph := NewGraph()
@@ -145,13 +148,14 @@ func main() {
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
 		// we guarantee one goroutine/node => no unbounded goroutines
-		node.GenerateSenetence(&wg, resultCh.In(), *node_limit, *max_depth)
+		node.GenerateSentence(&wg, resultCh.In(), *node_limit, *max_depth)
 
 		if node.label == "." { continue }
 		wg.Add(1)
 		
 		msg := Message {
-			sentence: fmt.Sprintf("[FROM %s]", node.label),
+			//sentence: fmt.Sprintf("[FROM %s]", node.label),
+			sentence: []string{fmt.Sprintf("[FROM %s]", node.label)},
 			visited: map[string]int{node.label: 1},
 			depth: 0,
 		}
@@ -171,7 +175,7 @@ func main() {
 	if *print_sentences{
 		i := 0
 		for res := range resultCh.Out() {
-			fmt.Println(res.sentence)
+			fmt.Println(strings.Join(res.sentence, " "))
 			i++
 		}
 		fmt.Println("#sentences:", i)
@@ -187,4 +191,14 @@ func main() {
 
 	//TODO: write senteces to output file
 	if *export_sentences {}
+
+	if *memprofile != "" {
+        f, err := os.Create(*memprofile)
+        if err != nil {
+            log.Fatal(err)
+        }
+        pprof.WriteHeapProfile(f)
+        f.Close()
+        return
+    }
 }

@@ -2,3 +2,6 @@ example.txt
 *.dot
 *.prof
 *.zip
+
+*.prof
+*.mprof

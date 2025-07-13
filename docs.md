@@ -14,4 +14,4 @@ The first solution had a fixed buffer size; however
 2) for varying depth, limit paramters
 this can cause panics or crashes.
 
-My solution was to opt for unbounded channels.
+My solution was to opt for unbounded channels. (implemented as In channel, queue as buffer, Out channel)

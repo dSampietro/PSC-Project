@@ -71,13 +71,13 @@ func (g *Graph) ToDot() string {
 
 
 type Message struct {
-	sentence string
+	sentence []string
 	visited map[string]int
 	depth int
 }
 
 
-func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
+func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
 	go func(){
 		for msg := range n.input.Out() {
 			if msg.depth >= max_depth {
@@ -90,9 +90,11 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 				continue
 			}
 
-			newSentence := msg.sentence + " " + n.label
+			//newSentence := msg.sentence + " " + n.label
+			newSentence := append(msg.sentence,n.label)
+
 			//update visited nodes of message
-			newVisited := make(map[string]int, len(msg.visited))
+			newVisited := make(map[string]int, len(msg.visited)+1)
 			for k, v := range msg.visited {
 				newVisited[k] = v
 			}
@@ -113,7 +115,7 @@ func (n *Node) GenerateSenetence(wg *sync.WaitGroup, resultCh chan<- Message, no
 				wg.Add(1)
 
 				//clone visited list for each successor, to avoid mutable sharing
-				visitedCopy := make(map[string]int, len(msg.visited))
+				visitedCopy := make(map[string]int, len(msg.visited)+1)
 				for k, v := range newVisited {
 					visitedCopy[k] = v
 				}

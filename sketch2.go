@@ -52,7 +52,7 @@ func main() {
 	log.SetOutput(io.Discard)	//enable/disable logging
 
 	file_path := flag.String("file", "", "the path of the file to analyze")
-	node_limit := flag.Int("node_limit", 10, "how many times a sentence can use a node")
+	//node_limit := flag.Int("node_limit", 10, "how many times a sentence can use a node")
 	max_depth := flag.Int("max_depth", 10, "maximum depth of the generated sentence")
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
@@ -148,7 +148,7 @@ func main() {
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
 		// we guarantee one goroutine/node => no unbounded goroutines
-		node.GenerateSentence(&wg, resultCh.In(), *node_limit, *max_depth)
+		node.GenerateSentence(&wg, resultCh.In(), *max_depth)
 
 		if node.label == "." { continue }
 		wg.Add(1)
@@ -156,7 +156,7 @@ func main() {
 		msg := Message {
 			//sentence: fmt.Sprintf("[FROM %s]", node.label),
 			sentence: []string{fmt.Sprintf("[FROM %s]", node.label)},
-			visited: map[string]int{node.label: 1},
+			//visited: map[string]int{node.label: 1},
 			depth: 0,
 		}
 		node.input.In() <- msg // Start traversal with empty message

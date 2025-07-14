@@ -68,43 +68,31 @@ func (g *Graph) ToDot() string {
 }
 
 
-
-
 type Message struct {
 	sentence []string
-	visited map[string]int
 	depth int
 }
 
 
-func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
+func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max_depth int) {
 	go func(){
 		for msg := range n.input.Out() {
+			//abort message if longer than max_depth
 			if msg.depth >= max_depth {
 				wg.Done()
                 continue
             }
 
-			if msg.visited[n.label] + 1 > node_limit {
-				wg.Done()
-				continue
-			}
-
 			//newSentence := msg.sentence + " " + n.label
-			newSentence := append(msg.sentence,n.label)
-
-			//update visited nodes of message
-			newVisited := make(map[string]int, len(msg.visited)+1)
-			for k, v := range msg.visited {
-				newVisited[k] = v
-			}
-			newVisited[n.label]++
+			newSentence := append(msg.sentence, n.label)
 
 			
 			if len(n.successors) == 0 {	//terminal node
+				clonedSentence := make([]string, len(newSentence))
+				copy(clonedSentence, newSentence)
+
 				resultCh <- Message{
-					sentence: newSentence,
-					visited: newVisited,
+					sentence: clonedSentence,
 					depth: msg.depth + 1}
 				wg.Done()
 				continue
@@ -113,16 +101,11 @@ func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, nod
 			//forward to successors
 			for _, succ := range n.successors {
 				wg.Add(1)
-
-				//clone visited list for each successor, to avoid mutable sharing
-				visitedCopy := make(map[string]int, len(msg.visited)+1)
-				for k, v := range newVisited {
-					visitedCopy[k] = v
-				}
+				clonedSentence := make([]string, len(newSentence))
+				copy(clonedSentence, newSentence)
 
 				succ.input.In() <- Message{
-					sentence: newSentence,
-					visited: visitedCopy,
+					sentence: clonedSentence,
 					depth: msg.depth + 1}
 			}
 			wg.Done()

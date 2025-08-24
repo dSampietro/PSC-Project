@@ -83,9 +83,7 @@ func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max
                 continue
             }
 
-			//newSentence := msg.sentence + " " + n.label
 			newSentence := append(msg.sentence, n.label)
-
 			
 			if len(n.successors) == 0 {	//terminal node
 				clonedSentence := make([]string, len(newSentence))
@@ -96,7 +94,7 @@ func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max
 					depth: msg.depth + 1}
 				wg.Done()
 				continue
-			} 
+			}
 
 			//forward to successors
 			for _, succ := range n.successors {
@@ -111,4 +109,31 @@ func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max
 			wg.Done()
 		}
 	}()
+}
+
+
+func (n *Node) GenerateSentenceSeq(msg Message, resultCh chan<- Message, max_depth int) {
+	if len(n.successors) == 0 { 	//terminal node
+		resultCh <- Message{
+			sentence: append(msg.sentence, n.label), 
+			depth: msg.depth + 1}
+		return
+	}
+
+	if msg.depth >= max_depth {
+		return
+	}
+
+	for _, succ := range n.successors {
+		clonedSentence := make([]string, len(msg.sentence))
+		copy(clonedSentence, msg.sentence)
+
+		newMsg := Message {
+			sentence: append(clonedSentence, n.label),
+			depth: msg.depth + 1,
+		}
+		
+		//recursively Generate from next node 
+		succ.GenerateSentenceSeq(newMsg, resultCh, max_depth)
+	}
 }

@@ -57,6 +57,8 @@ func main() {
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
 	export_sentences := flag.Bool("export_sentences", false, "enable to export the generated sentences")
+	//seq := flag.Bool("seq", false, "generate in sequential mode")
+
 
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
 	memprofile := flag.String("memprofile", "", "write memory profile to this file")

@@ -68,64 +68,72 @@ func (g *Graph) ToDot() string {
 }
 
 
-
-
 type Message struct {
 	sentence []string
-	visited map[string]int
 	depth int
 }
 
 
-func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, node_limit int, max_depth int) {
+func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max_depth int) {
 	go func(){
 		for msg := range n.input.Out() {
+			//abort message if longer than max_depth
 			if msg.depth >= max_depth {
 				wg.Done()
                 continue
             }
 
-			if msg.visited[n.label] + 1 > node_limit {
-				wg.Done()
-				continue
-			}
-
-			//newSentence := msg.sentence + " " + n.label
-			newSentence := append(msg.sentence,n.label)
-
-			//update visited nodes of message
-			newVisited := make(map[string]int, len(msg.visited)+1)
-			for k, v := range msg.visited {
-				newVisited[k] = v
-			}
-			newVisited[n.label]++
-
+			newSentence := append(msg.sentence, n.label)
 			
 			if len(n.successors) == 0 {	//terminal node
+				clonedSentence := make([]string, len(newSentence))
+				copy(clonedSentence, newSentence)
+
 				resultCh <- Message{
-					sentence: newSentence,
-					visited: newVisited,
+					sentence: clonedSentence,
 					depth: msg.depth + 1}
 				wg.Done()
 				continue
-			} 
+			}
 
 			//forward to successors
 			for _, succ := range n.successors {
 				wg.Add(1)
-
-				//clone visited list for each successor, to avoid mutable sharing
-				visitedCopy := make(map[string]int, len(msg.visited)+1)
-				for k, v := range newVisited {
-					visitedCopy[k] = v
-				}
+				clonedSentence := make([]string, len(newSentence))
+				copy(clonedSentence, newSentence)
 
 				succ.input.In() <- Message{
-					sentence: newSentence,
-					visited: visitedCopy,
+					sentence: clonedSentence,
 					depth: msg.depth + 1}
 			}
 			wg.Done()
 		}
 	}()
+}
+
+
+func (n *Node) GenerateSentenceSeq(msg Message, resultCh chan<- Message, max_depth int) {
+	if len(n.successors) == 0 { 	//terminal node
+		resultCh <- Message{
+			sentence: append(msg.sentence, n.label), 
+			depth: msg.depth + 1}
+		return
+	}
+
+	if msg.depth >= max_depth {
+		return
+	}
+
+	for _, succ := range n.successors {
+		clonedSentence := make([]string, len(msg.sentence))
+		copy(clonedSentence, msg.sentence)
+
+		newMsg := Message {
+			sentence: append(clonedSentence, n.label),
+			depth: msg.depth + 1,
+		}
+		
+		//recursively Generate from next node 
+		succ.GenerateSentenceSeq(newMsg, resultCh, max_depth)
+	}
 }

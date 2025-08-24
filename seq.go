@@ -27,26 +27,17 @@ import (
 	"os"
 	"runtime/pprof"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
 	"golang.design/x/chann"
 )
 
-
-func Assert(condition bool, msg string) {
-	if !condition {
-		log.Fatalf("Assertion failed: %s", msg)
-	}
-}
-
 func TrimPunctuation(s string) string {
 	return strings.TrimFunc(s, func(r rune) bool {
 		return unicode.IsPunct(r)
 	})
 }
-
 
 func main() {
 	log.SetOutput(io.Discard)	//enable/disable logging
@@ -57,7 +48,6 @@ func main() {
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
 	export_sentences := flag.Bool("export_sentences", false, "enable to export the generated sentences")
-	//seq := flag.Bool("seq", false, "generate in sequential mode")
 
 
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
@@ -92,14 +82,6 @@ func main() {
 		}
 	}
 
-	/*
-	//compute min value of N
-	max_string_len := 0
-	for _, tok := range tokens {
-		max_string_len = max(max_string_len, len(tok))
-	}
-	fmt.Printf("max_string_len: %d\n", max_string_len)
-	*/
 	
 	//GRAPH BUILDING
 	graph := NewGraph()
@@ -138,22 +120,15 @@ func main() {
 			}
 		}()
 	}
-
-
     
 	//SENTENCE GENERATION
-	var wg sync.WaitGroup
 	resultCh := chann.New[Message]()//make(chan Message, 1000)
 
 	start := time.Now()
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
-		// we guarantee one goroutine/node => no unbounded goroutines
-		node.GenerateSentence(&wg, resultCh.In(), *max_depth)
-
 		if node.label == "." { continue }
-		wg.Add(1)
 		
 		msg := Message {
 			//sentence: fmt.Sprintf("[FROM %s]", node.label),
@@ -161,12 +136,13 @@ func main() {
 			//visited: map[string]int{node.label: 1},
 			depth: 0,
 		}
-		node.input.In() <- msg // Start traversal with empty message
+		//node.input.In() <- msg // Start traversal with empty message
+
+		node.GenerateSentenceSeq(msg, resultCh.In(), *max_depth)
 	}
 
 
-	// Wait for all paths to finish
-	wg.Wait()
+	// Wait for all paths to finish: since it is seq, we wait for all GenerateSentenceSeq to finish
 	resultCh.Close()
 	
 

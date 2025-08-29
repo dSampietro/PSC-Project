@@ -52,11 +52,9 @@ func main() {
 	log.SetOutput(io.Discard)	//enable/disable logging
 
 	file_path := flag.String("file", "", "the path of the file to analyze")
-	//node_limit := flag.Int("node_limit", 10, "how many times a sentence can use a node")
 	max_depth := flag.Int("max_depth", 10, "maximum depth of the generated sentence")
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
-	export_sentences := flag.Bool("export_sentences", false, "enable to export the generated sentences")
 	//seq := flag.Bool("seq", false, "generate in sequential mode")
 
 
@@ -74,8 +72,6 @@ func main() {
         defer pprof.StopCPUProfile()
     }
 
-
-
 	text := ParseFile(*file_path)
 	//fmt.Println(text)
 
@@ -91,15 +87,6 @@ func main() {
 			tokens = append(tokens, strings.Split(normalized_sent, " "))
 		}
 	}
-
-	/*
-	//compute min value of N
-	max_string_len := 0
-	for _, tok := range tokens {
-		max_string_len = max(max_string_len, len(tok))
-	}
-	fmt.Printf("max_string_len: %d\n", max_string_len)
-	*/
 	
 	//GRAPH BUILDING
 	graph := NewGraph()
@@ -176,8 +163,8 @@ func main() {
 	// Collect results
 	if *print_sentences{
 		i := 0
-		for res := range resultCh.Out() {
-			fmt.Println(strings.Join(res.sentence, " "))
+		for range resultCh.Out() {
+			//fmt.Println(strings.Join(res.sentence, " "))
 			i++
 		}
 		fmt.Println("#sentences:", i)
@@ -190,9 +177,6 @@ func main() {
 	for _, node := range graph.nodes {
 		node.input.Close()
 	}
-
-	//TODO: write senteces to output file
-	if *export_sentences {}
 
 	if *memprofile != "" {
         f, err := os.Create(*memprofile)

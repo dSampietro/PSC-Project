@@ -27,7 +27,6 @@ import (
 	"os"
 	"runtime/pprof"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -55,7 +54,7 @@ func main() {
 	max_depth := flag.Int("max_depth", 10, "maximum depth of the generated sentence")
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
-	//seq := flag.Bool("seq", false, "generate in sequential mode")
+	seq := flag.Bool("seq", false, "generate in sequential mode")
 
 
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
@@ -129,10 +128,17 @@ func main() {
 
     
 	//SENTENCE GENERATION
-	var wg sync.WaitGroup
-	resultCh := chann.New[Message]()//make(chan Message, 1000)
-
 	start := time.Now()
+	
+	resultCh := chann.New[Message]()//make(chan Message, 1000)
+	
+	if *seq {
+		SeqStrategy(*graph, *max_depth, resultCh)
+	} else {
+		ParStrategy(*graph, *max_depth, resultCh)
+	}
+	/*
+	var wg sync.WaitGroup
 
 	// Setup channel with initial value DFS from each node
 	for _, node := range graph.nodes {
@@ -153,7 +159,9 @@ func main() {
 
 
 	// Wait for all paths to finish
-	wg.Wait()
+	wg.Wait()*/
+
+
 	resultCh.Close()
 	
 

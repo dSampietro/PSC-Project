@@ -51,14 +51,14 @@ func main() {
 	log.SetOutput(io.Discard)	//enable/disable logging
 
 	file_path := flag.String("file", "", "the path of the file to analyze")
-	max_depth := flag.Int("max_depth", 10, "maximum depth of the generated sentence")
+	max_depth := flag.Int("max_depth", 1, "maximum depth of the generated sentence")
 	export_graph := flag.Bool("export_graph", false, "enable to export the text network in .dot")
 	print_sentences := flag.Bool("print_sentences", false, "enable to print all the generated sentences")
 	seq := flag.Bool("seq", false, "generate in sequential mode")
 
 
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
-	memprofile := flag.String("memprofile", "", "write memory profile to this file")
+	memprofile := flag.String("memprofile", "", "write memory profile to file")
 	
 	flag.Parse()
 
@@ -72,16 +72,12 @@ func main() {
     }
 
 	text := ParseFile(*file_path)
-	//fmt.Println(text)
-
 	sentences := strings.Split(strings.TrimSpace(text), ".")
-	//fmt.Println(sentences)
 
 	var tokens [][]string
 
 	for _, sent := range sentences {
 		if sent != "" {
-			//fmt.Printf("sentence: '%s'\n", sent)
 			normalized_sent := strings.TrimSpace(sent) //remove spaces around sentence
 			tokens = append(tokens, strings.Split(normalized_sent, " "))
 		}
@@ -112,8 +108,6 @@ func main() {
 			}
 		}
 	}
-
-	//fmt.Println(graph.ToDot())
 
 	if *export_graph {
 		go func() {

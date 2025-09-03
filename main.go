@@ -131,30 +131,6 @@ func main() {
 	} else {
 		ParStrategy(*graph, *max_depth, resultCh)
 	}
-	/*
-	var wg sync.WaitGroup
-
-	// Setup channel with initial value DFS from each node
-	for _, node := range graph.nodes {
-		// we guarantee one goroutine/node => no unbounded goroutines
-		node.GenerateSentence(&wg, resultCh.In(), *max_depth)
-
-		if node.label == "." { continue }
-		wg.Add(1)
-		
-		msg := Message {
-			//sentence: fmt.Sprintf("[FROM %s]", node.label),
-			sentence: []string{fmt.Sprintf("[FROM %s]", node.label)},
-			//visited: map[string]int{node.label: 1},
-			depth: 0,
-		}
-		node.input.In() <- msg // Start traversal with empty message
-	}
-
-
-	// Wait for all paths to finish
-	wg.Wait()*/
-
 
 	resultCh.Close()
 	
@@ -165,8 +141,8 @@ func main() {
 	// Collect results
 	if *print_sentences{
 		i := 0
-		for range resultCh.Out() {
-			//fmt.Println(strings.Join(res.sentence, " "))
+		for res:= range resultCh.Out() {
+			fmt.Println(strings.Join(res.sentence, " "))
 			i++
 		}
 		fmt.Println("#sentences:", i)

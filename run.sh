@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
 done
 
 # Run the Go program
-MAIN="sketch2.go" 
+MAIN="main.go" 
 CMD="go run $MAIN graph.go file_operation.go strategy.go 
     -file \"$FILE\" -max_depth $MAX_DEPTH"
 

@@ -16,7 +16,6 @@ func SeqStrategy(graph Graph, max_depth int, resultCh *chann.Chann[Message]) {
 			sentence: []string{fmt.Sprintf("[FROM %s]", node.label)},
 			depth: 0,
 		}
-		//node.input.In() <- msg // Start traversal with empty message
 
 		node.GenerateSentenceSeq(msg, resultCh.In(), max_depth)
 	}

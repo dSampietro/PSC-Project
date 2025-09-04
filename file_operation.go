@@ -34,6 +34,10 @@ func Tokenize(s string) []string {
 	})
 }
 
+/*
+No particular specification for the input file:
+	- .txt file
+*/
 func ParseFile(filename string) string {
 	text, err := os.ReadFile(filename)
 	if err != nil {

@@ -113,14 +113,14 @@ func (n *Node) GenerateSentence(wg *sync.WaitGroup, resultCh chan<- Message, max
 
 
 func (n *Node) GenerateSentenceSeq(msg Message, resultCh chan<- Message, max_depth int) {
+	if msg.depth >= max_depth {
+		return
+	}
+	
 	if len(n.successors) == 0 { 	//terminal node
 		resultCh <- Message{
 			sentence: append(msg.sentence, n.label), 
 			depth: msg.depth + 1}
-		return
-	}
-
-	if msg.depth >= max_depth {
 		return
 	}
 

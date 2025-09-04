@@ -5,6 +5,7 @@ FILE=""
 MAX_DEPTH=1
 SEQ=false
 PRINT_SENTENCES=false
+EXPORT_GRAPH=false
 
 # Parse arguments
 while [ $# -gt 0 ]; do
@@ -25,9 +26,13 @@ while [ $# -gt 0 ]; do
       PRINT_SENTENCES=true
       shift 1
       ;;
+    -export_graph)
+      EXPORT_GRAPH=true
+      shift 1
+      ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 -file <filename> -max_depth <num> [-seq] [-print_sentences]"
+      echo "Usage: $0 -file <filename> -max_depth <num> [-seq] [-print_sentences] [-export_graph]"
       exit 1
       ;;
   esac
@@ -44,6 +49,10 @@ fi
 
 if [ "$SEQ" = true ]; then
   CMD="$CMD -seq"
+fi
+
+if [ "$EXPORT_GRAPH" = true ]; then
+  CMD="$CMD -export_graph"
 fi
 
 eval $CMD
